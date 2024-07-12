@@ -322,7 +322,8 @@
           console.log("JSON Data to be sent:", jsonData);
 
           const response = await fetch(
-            "http://localhost:5000/save-transcript",
+            // "http://localhost:5000/save-transcript",
+            "https://chatbot-frontend-new.vercel.app/save-transcript",
             {
               method: "POST",
               headers: {
@@ -397,7 +398,7 @@
         console.log(userMessage);
         try {
           const response = await fetch(
-            `https://chatbot-backend-2.onrender.com/chat-history/${objectId}`,
+            `https://chatbot-frontend-new.vercel.app/chat-history/${objectId}`,
             {
               method: "POST",
               headers: {
