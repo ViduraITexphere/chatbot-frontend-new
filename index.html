@@ -162,11 +162,43 @@
       #chat-form {
         padding-top: 10px;
       }
+      #user-info-form {
+        display: none;
+        padding: 20px;
+        text-align: center; /* Align inputs and button center */
+        background-color: #f7ecec;
+        border-radius: 10px;
+      }
+
+      .user-info-input {
+        display: block;
+        width: 95%;
+        margin-bottom: 10px;
+        padding: 5px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-family: "DM Sans", sans-serif;
+      }
+
+      #submit-info-button {
+        background-color: #d10000;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-family: "DM Sans", sans-serif;
+      }
+
+      #submit-info-button:hover {
+        background-color: #a00000;
+      }
     </style>
   </head>
   <body>
     <!-- Floating button to toggle chatbot visibility -->
-    <!-- <button id="toggle-chatbot" class="floating-button">💬</button> -->
     <button id="toggle-chatbot" class="floating-button">
       <img src="bot.png" alt="Chat" width="50px" />
     </button>
@@ -192,6 +224,27 @@
       </div>
       <div id="chat-container">
         <div id="chat-history"></div>
+        <div id="user-info-form" style="display: none">
+          <input
+            type="text"
+            id="user-name"
+            placeholder="Enter your name"
+            class="user-info-input"
+          />
+          <input
+            type="email"
+            id="user-email"
+            placeholder="Enter your email"
+            class="user-info-input"
+          />
+          <input
+            type="tel"
+            id="user-phone"
+            placeholder="Enter your phone number"
+            class="user-info-input"
+          />
+          <button id="submit-info-button">Submit</button>
+        </div>
         <form id="chat-form">
           <input type="text" id="user-input" placeholder="Enter your message" />
           <button type="submit" id="send-button">
@@ -208,86 +261,23 @@
     <script>
       let chatTranscript = [];
       let inactivityTimer;
-      let conversationStarted = false; // Track if the conversation has started
-      let objectId = new URLSearchParams(window.location.search).get(
+      let endConversationTimer;
+      let userInfoSubmitted = false;
+      let conversationStarted = false;
+      const objectId = new URLSearchParams(window.location.search).get(
         "objectId"
       );
 
+      const chatbotContainer = document.getElementById("chatbot-container");
+      const chatHistory = document.getElementById("chat-history");
+
       console.log("transcript:", chatTranscript);
 
-      // Function to add messages to the transcript
       function addToTranscript(sender, message) {
         chatTranscript.push({ sender, message });
-        console.log("transcript after adding:", chatTranscript); // Log the transcript after adding
+        console.log("transcript after adding:", chatTranscript);
       }
 
-      // Function to create and display the End Conversation button
-      function displayEndConversationButton() {
-        if (conversationStarted && chatHistory.innerHTML.trim() !== "") {
-          // Check if conversation has started and there are messages in chat history
-          const endConversationButton = document.createElement("button");
-          endConversationButton.textContent = "End Conversation";
-          endConversationButton.classList.add("bot-message"); // Apply bot message style
-          endConversationButton.addEventListener("click", () =>
-            endConversation(objectId)
-          );
-          chatHistory.appendChild(endConversationButton);
-        }
-      }
-
-      // Function to handle the end of the conversation
-      async function endConversation() {
-        // Send the full chat transcript and objectId to the backend
-        console.log("Final Transcript:", chatTranscript);
-        try {
-          const queryString = window.location.search;
-          const urlParams = new URLSearchParams(queryString);
-          const objectId = urlParams.get("objectId");
-
-          const response = await fetch(
-            "https://your-backend-url.com/endpoint",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ transcript: chatTranscript, objectId }),
-            }
-          );
-          const data = await response.json();
-          console.log("Transcript sent:", data);
-        } catch (error) {
-          console.error("Error sending transcript:", error);
-        }
-
-        // Clear the chat transcript array for the next conversation
-        chatTranscript = [];
-        console.log("Transcript cleared.");
-        // Remove the End Conversation button from the chat history
-        const endConversationButton = document.querySelector(".bot-message");
-        if (endConversationButton) {
-          chatHistory.removeChild(endConversationButton);
-        }
-        // Set conversationStarted to false to prevent the button from appearing again
-        conversationStarted = false;
-      }
-
-      // Function to start the inactivity timer
-      function startInactivityTimer() {
-        // Clear any existing timer to prevent multiple timers running simultaneously
-        clearTimeout(inactivityTimer);
-        // Start a new timer
-        inactivityTimer = setTimeout(() => {
-          displayEndConversationButton();
-        }, 10000); // Adjust the duration (in milliseconds) as needed (e.g., 5000ms = 5 seconds)
-      }
-
-      // JavaScript code for toggling chatbot visibility
-      const chatbotContainer = document.getElementById("chatbot-container");
-      const toggleChatbotButton = document.getElementById("toggle-chatbot");
-
-      // Function to display the welcome message only once
-      // Function to display the welcome message only once
       function displayWelcomeMessageOnce() {
         console.log("Displaying welcome message...");
         const welcomeMessage =
@@ -309,33 +299,103 @@
       // Directly call the function to display the welcome message once
       displayWelcomeMessageOnce();
 
+      function displayEndConversationButton() {
+        if (conversationStarted && chatHistory.innerHTML.trim() !== "") {
+          const endConversationButton = document.createElement("button");
+          endConversationButton.textContent = "End Conversation";
+          endConversationButton.classList.add("bot-message");
+          endConversationButton.addEventListener("click", () =>
+            endConversation(objectId)
+          );
+          chatHistory.appendChild(endConversationButton);
+        }
+      }
+
+      async function endConversation() {
+        console.log("Final Transcript:", chatTranscript);
+        try {
+          const jsonData = {
+            transcript: chatTranscript,
+            objectId,
+          };
+
+          console.log("JSON Data to be sent:", jsonData);
+
+          const response = await fetch(
+            "http://localhost:5000/save-transcript",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(jsonData),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+          console.log("Transcript sent:", data);
+        } catch (error) {
+          console.error("Error sending transcript:", error);
+        }
+
+        chatTranscript = [];
+        console.log("Transcript cleared.");
+        const endConversationButton = document.querySelector(".bot-message");
+        if (endConversationButton) {
+          chatHistory.removeChild(endConversationButton);
+        }
+        conversationStarted = false;
+      }
+
+      function startInactivityTimer() {
+        console.log("Starting inactivity timer...");
+        clearTimeout(inactivityTimer);
+        clearTimeout(endConversationTimer);
+        if (!userInfoSubmitted) {
+          inactivityTimer = setTimeout(() => {
+            displayUserInfoForm();
+          }, 10000);
+        } else {
+          endConversationTimer = setTimeout(
+            displayEndConversationButton,
+            15000
+          );
+        }
+      }
+
+      function displayUserInfoForm() {
+        document.getElementById("user-info-form").style.display = "block";
+      }
+
       function toggleChatbot() {
         chatbotContainer.style.display =
-          chatbotContainer.style.display === "none" ? "block" : "none";
-        // Hide the End Conversation button when the chatbot is opened
+          chatbotContainer.style.display === "none" ||
+          chatbotContainer.style.display === ""
+            ? "block"
+            : "none";
+        conversationStarted = true;
         const endConversationButton = document.querySelector(".bot-message");
         if (endConversationButton) {
           endConversationButton.style.display = "none";
         }
       }
 
-      // Attach click event listener to the floating button
-      toggleChatbotButton.addEventListener("click", toggleChatbot);
+      document
+        .getElementById("toggle-chatbot")
+        .addEventListener("click", toggleChatbot);
 
-      // Your remaining JavaScript code for chatbot functionality
-      const chatHistory = document.getElementById("chat-history");
       const userInput = document.getElementById("user-input");
       const form = document.getElementById("chat-form");
 
       async function sendMessage() {
         const userMessage = userInput.value;
-        userInput.value = ""; // Clear input field
+        userInput.value = "";
         console.log(userMessage);
         try {
-          const queryString = window.location.search;
-          const urlParams = new URLSearchParams(queryString);
-          const objectId = urlParams.get("objectId");
-
           const response = await fetch(
             `https://chatbot-backend-2.onrender.com/chat-history/${objectId}`,
             {
@@ -348,52 +408,74 @@
           );
 
           const data = await response.json();
-          console.log(data);
           const botMessage = data.response;
-          console.log(botMessage);
 
-          // Add chat message to the chat history
           chatHistory.innerHTML += `<div class="user-message">${userMessage}</div>`;
           chatHistory.innerHTML += `<div class="bot-message">${botMessage}</div>`;
 
-          // Add user message to the transcript
           addToTranscript("User", userMessage);
-          // Add bot message to the transcript
           addToTranscript("Bot", botMessage);
 
-          // Scroll to the bottom of the chat history
           chatHistory.scrollTop = chatHistory.scrollHeight;
         } catch (error) {
           console.error("Error:", error);
-          // Handle errors gracefully, e.g., display an error message to the user
         }
       }
 
       form.addEventListener("submit", (event) => {
-        event.preventDefault(); // Prevent form submission
+        event.preventDefault();
         const loader = document.getElementById("loader");
-        loader.style.display = "block"; // Show the loader
+        loader.style.display = "block";
         sendMessage().finally(() => {
-          loader.style.display = "none"; // Hide the loader after the message is sent
+          loader.style.display = "none";
         });
       });
 
-      // Attach mousemove event listener to track user activity
-      document.addEventListener("mousemove", () => {
-        // Reset the inactivity timer on user activity
-        startInactivityTimer();
-      });
+      document
+        .getElementById("submit-info-button")
+        .addEventListener("click", async () => {
+          const userName = document.getElementById("user-name").value;
+          const userEmail = document.getElementById("user-email").value;
+          const userPhone = document.getElementById("user-phone").value;
 
-      // Attach keydown event listener to track user activity (optional, in case users are typing)
-      document.addEventListener("keydown", () => {
-        // Reset the inactivity timer on user activity
-        startInactivityTimer();
-      });
+          addToTranscript(
+            "User Info",
+            `Name: ${userName}, Email: ${userEmail}, Phone: ${userPhone}`
+          );
+          userInfoSubmitted = true;
+          document.getElementById("user-info-form").style.display = "none";
+          clearTimeout(inactivityTimer);
+          endConversationTimer = setTimeout(
+            displayEndConversationButton,
+            15000
+          );
 
-      // Initially hide the chatbot container
-      chatbotContainer.style.display = "none";
+          try {
+            const response = await fetch(
+              "http://localhost:5000/save-user-info",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ userName, userEmail, userPhone }),
+              }
+            );
 
-      // Start the inactivity timer after the page has loaded
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+
+            const data = await response.json();
+            console.log("User info sent:", data);
+          } catch (error) {
+            console.error("Error sending user info:", error);
+          }
+        });
+
+      document.addEventListener("mousemove", startInactivityTimer);
+      document.addEventListener("keydown", startInactivityTimer);
+
       window.onload = startInactivityTimer;
     </script>
   </body>
