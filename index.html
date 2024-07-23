@@ -206,6 +206,32 @@
       #submit-info-button:hover {
         background-color: #a00000;
       }
+      .end-conversation-button {
+        background-color: #ff4d4d; /* Bright red for alert */
+        color: #ffffff;
+        border: 2px solid #d10000; /* Darker border for emphasis */
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 18px;
+        font-family: "DM Sans", sans-serif;
+        font-weight: bold;
+        margin-top: 10px;
+        text-align: center;
+        display: block;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+        transition: background-color 0.3s, border-color 0.3s; /* Smooth color transition */
+      }
+
+      .end-conversation-button:hover {
+        background-color: #d10000; /* Darker red on hover */
+        border-color: #b00000; /* Darker border on hover */
+      }
+
+      .end-conversation-button:active {
+        background-color: #a00000; /* Even darker red when clicked */
+        border-color: #800000; /* Darkest border when clicked */
+      }
     </style>
   </head>
   <body>
@@ -322,13 +348,24 @@
 
       function displayEndConversationButton() {
         if (conversationStarted && chatHistory.innerHTML.trim() !== "") {
-          const endConversationButton = document.createElement("button");
-          endConversationButton.textContent = "End Conversation";
-          endConversationButton.classList.add("bot-message");
-          endConversationButton.addEventListener("click", () =>
-            endConversation(objectId)
+          // Check if the end conversation button already exists
+          let endConversationButton = document.querySelector(
+            ".end-conversation-button"
           );
-          chatHistory.appendChild(endConversationButton);
+          if (!endConversationButton) {
+            // Create the end conversation button
+            endConversationButton = document.createElement("button");
+            endConversationButton.textContent = "End Conversation";
+            endConversationButton.classList.add("end-conversation-button");
+            endConversationButton.classList.add("bot-message");
+            endConversationButton.addEventListener("click", () =>
+              endConversation(objectId)
+            );
+            chatHistory.appendChild(endConversationButton);
+          }
+
+          // Scroll to the bottom to make sure the button is visible
+          chatHistory.scrollTop = chatHistory.scrollHeight;
         }
       }
 
