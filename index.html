@@ -165,9 +165,20 @@
       #user-info-form {
         display: none;
         padding: 20px;
+        position: absolute;
+        bottom: 85px;
+        height: 55%;
+        width: 74%;
+        left: auto;
         text-align: center; /* Align inputs and button center */
-        background-color: #f7ecec;
+        background-color: #ff8c8c;
         border-radius: 10px;
+      }
+      #user-info-form p {
+        font-size: 14px;
+        font-family: "DM Sans", sans-serif;
+        margin-bottom: 10px;
+        color: #ffffff;
       }
 
       .user-info-input {
@@ -222,9 +233,12 @@
       <div id="chat-header">
         <h1>Chat with us</h1>
       </div>
+
       <div id="chat-container">
         <div id="chat-history"></div>
+        <!--user info form-->
         <div id="user-info-form" style="display: none">
+          <p>Please provide your information to continue the conversation 💬</p>
           <input
             type="text"
             id="user-name"
@@ -245,6 +259,8 @@
           />
           <button id="submit-info-button">Submit</button>
         </div>
+
+        <!--chat form-->
         <form id="chat-form">
           <input type="text" id="user-input" placeholder="Enter your message" />
           <button type="submit" id="send-button">
@@ -273,9 +289,14 @@
 
       console.log("transcript:", chatTranscript);
 
+      // Function to add messages to transcript and update the user messages flag
       function addToTranscript(sender, message) {
         chatTranscript.push({ sender, message });
         console.log("transcript after adding:", chatTranscript);
+
+        if (sender === "User") {
+          userMessagesExist = true; // Set flag if a user message is added
+        }
       }
 
       function displayWelcomeMessageOnce() {
@@ -356,11 +377,12 @@
         console.log("Starting inactivity timer...");
         clearTimeout(inactivityTimer);
         clearTimeout(endConversationTimer);
-        if (!userInfoSubmitted) {
+
+        if (userMessagesExist && !userInfoSubmitted) {
           inactivityTimer = setTimeout(() => {
             displayUserInfoForm();
           }, 10000);
-        } else {
+        } else if (userInfoSubmitted) {
           endConversationTimer = setTimeout(
             displayEndConversationButton,
             15000
