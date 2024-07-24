@@ -139,7 +139,7 @@
         margin: 0;
       }
       .floating-button img {
-        width: 65px;
+        width: 56px;
       }
       .bot-message.welcome-message {
         background-color: #ffeded; /* Change the background color to your desired color */
@@ -408,6 +408,9 @@
           chatHistory.removeChild(endConversationButton);
         }
         conversationStarted = false;
+
+        // Close the chatbot
+        toggleChatbot();
       }
 
       function startInactivityTimer() {
